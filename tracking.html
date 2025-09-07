@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KHOZZA • Track Your Order</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&family=Cinzel:wght@600&display=swap" rel="stylesheet">
+<style>
+body{background:#050505;color:#fff;font-family:Inter,Arial,sans-serif;padding:20px;}
+h2{color:#d4af37;margin-bottom:15px;}
+input{padding:10px;width:100%;max-width:300px;margin:5px 0;border-radius:5px;border:1px solid #333;background:#111;color:#fff;}
+button{padding:10px 15px;background:#d4af37;color:#000;border:none;border-radius:8px;cursor:pointer;margin:5px;}
+#result{margin-top:20px;}
+.status-bar{padding:10px;border-radius:8px;font-weight:700;width:fit-content;}
+.processing{background:yellow;color:#000;}
+.packed{background:orange;color:#000;}
+.shipped{background:blue;color:#fff;}
+.delivered{background:green;color:#fff;}
+.cancelled{background:red;color:#fff;}
+.notfound{color:red;font-weight:700;}
+</style>
+</head>
+<body>
+<h2>Track Your KHOZZA Order</h2>
+<p>Enter your Order ID:</p>
+<input type="text" id="orderIdInput" placeholder="KHOZZA-YYYYMMDD-XXXX">
+<button onclick="checkOrder()">Check Status</button>
+
+<div id="result"></div>
+
+<script>
+let checkInterval;
+
+function displayOrder(order){
+    let statusClass="";
+    switch(order.status){
+        case "Processing": statusClass="processing"; break;
+        case "Packed": statusClass="packed"; break;
+        case "Shipped": statusClass="shipped"; break;
+        case "Delivered": statusClass="delivered"; break;
+        case "Cancelled – Payment Not Complete": statusClass="cancelled"; break;
+        default: statusClass="processing";
+    }
+
+    document.getElementById('result').innerHTML=`
+        <p><strong>Order ID:</strong> ${order.orderId}</p>
+        <p><strong>Product:</strong> ${order.product} × ${order.qty}</p>
+        <p><strong>Name:</strong> ${order.name}</p>
+        <p><strong>Current Status:</strong> <span class="status-bar ${statusClass}">${order.status}</span></p>
+    `;
+}
+
+function checkOrder(){
+    const orderId=document.getElementById('orderIdInput').value.trim();
+    if(!orderId){
+        document.getElementById('result').innerHTML="<p class='notfound'>Please enter an Order ID.</p>";
+        return;
+    }
+
+    // Clear previous interval if exists
+    if(checkInterval) clearInterval(checkInterval);
+
+    function updateStatus(){
+        const orders=JSON.parse(localStorage.getItem('khozzaOrders')||'[]');
+        const order=orders.find(o=>o.orderId===orderId);
+        if(!order){
+            document.getElementById('result').innerHTML="<p class='notfound'>Order not found!</p>";
+            return;
+        }
+        displayOrder(order);
+    }
+
+    // Initial check
+    updateStatus();
+    // Auto update every 5 seconds
+    checkInterval=setInterval(updateStatus,5000);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KHOZZA • Admin Orders</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+<style>
+body {
+  background:#050505;
+  color:#fff;
+  font-family:Inter,Arial,sans-serif;
+  padding:20px;
+}
+h2 { color:#d4af37; margin-bottom:15px; }
+input, select, button { font-family:Inter,Arial,sans-serif; }
+input,select {
+  padding:10px; margin:5px; border-radius:5px;
+  border:1px solid #333; background:#111; color:#fff;
+}
+button {
+  padding:8px 12px; background:#d4af37; color:#000;
+  border:none; border-radius:8px; cursor:pointer; margin:5px;
+  transition: transform 0.2s;
+}
+button:hover { transform:scale(1.05); }
+table {
+  width:100%; border-collapse:collapse; margin-top:15px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+th,td {
+  border:1px solid #444; padding:10px; text-align:left;
+  font-size:14px;
+}
+th { background:#222; color:#d4af37; }
+tr:hover { background:#1a1a1a; transition:0.2s; }
+.status-Processing { background:yellow; color:#000; font-weight:700; }
+.status-Packed { background:orange; color:#000; font-weight:700; }
+.status-Shipped { background:blue; color:#fff; font-weight:700; }
+.status-Delivered { background:green; color:#fff; font-weight:700; }
+.status-Cancelled { background:red; color:#fff; font-weight:700; }
+.hidden { display:none; }
+</style>
+</head>
+<body>
+
+<h2>KHOZZA Admin Login</h2>
+<div id="loginDiv">
+  <input type="text" id="username" placeholder="Username">
+  <input type="password" id="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+  <p id="loginMsg" style="color:red;"></p>
+</div>
+
+<div id="ordersDiv" class="hidden">
+<h2>All Orders</h2>
+<table>
+<thead>
+<tr>
+<th>Order ID</th><th>Product</th><th>Qty</th><th>Price</th>
+<th>Customer</th><th>Phone</th><th>Pin Code</th><th>Address</th>
+<th>UPI Ref</th><th>Status</th><th>Cancel</th><th>Delete</th>
+</tr>
+</thead>
+<tbody id="ordersTable"></tbody>
+</table>
+</div>
+
+<script>
+function login(){
+    const username=document.getElementById('username').value.trim();
+    const password=document.getElementById('password').value.trim();
+    const msg=document.getElementById('loginMsg');
+    if(username==="khozzaadmin" && password==="afzal@khozza₹#@123"){
+        document.getElementById('loginDiv').classList.add('hidden');
+        document.getElementById('ordersDiv').classList.remove('hidden');
+        loadOrders();
+    } else { msg.innerText="Invalid username or password!"; }
+}
+
+function loadOrders(){
+    const orders=JSON.parse(localStorage.getItem('khozzaOrders')||'[]');
+    const tbody=document.getElementById('ordersTable');
+    tbody.innerHTML="";
+    orders.forEach((o,index)=>{
+        const tr=document.createElement('tr');
+        
+        // Status dropdown
+        const statusSelect=document.createElement('select');
+        ["Processing","Packed","Shipped","Delivered"].forEach(s=>{
+            const opt=document.createElement('option');
+            opt.value=s; opt.innerText=s; if(o.status===s) opt.selected=true;
+            statusSelect.appendChild(opt);
+        });
+        statusSelect.onchange=()=>{
+            orders[index].status=statusSelect.value;
+            localStorage.setItem('khozzaOrders',JSON.stringify(orders));
+            loadOrders();
+        };
+
+        // Cancel button
+        const cancelBtn=document.createElement('button');
+        cancelBtn.innerText="Cancel Payment";
+        cancelBtn.onclick=()=>{
+            if(confirm("Are you sure to cancel this order due to fake/incomplete payment?")){
+                orders[index].status="Cancelled – Payment Not Complete";
+                localStorage.setItem('khozzaOrders',JSON.stringify(orders));
+                loadOrders();
+            }
+        };
+
+        // Delete button
+        const delBtn=document.createElement('button');
+        delBtn.innerText="Delete";
+        delBtn.onclick=()=>{
+            if(confirm("Are you sure to delete this order?")){
+                orders.splice(index,1);
+                localStorage.setItem('khozzaOrders',JSON.stringify(orders));
+                loadOrders();
+            }
+        };
+
+        // Populate table row
+        tr.innerHTML=`
+<td>${o.orderId}</td><td>${o.product}</td><td>${o.qty}</td><td>₹${o.price*o.qty}</td>
+<td>${o.name}</td><td>${o.phone}</td><td>${o.pincode}</td><td>${o.address}</td>
+<td>${o.upiRef}</td>
+`;
+
+        // Status, Cancel, Delete cells
+        const tdStatus=document.createElement('td'); 
+        tdStatus.appendChild(statusSelect);
+        const tdCancel=document.createElement('td'); 
+        tdCancel.appendChild(cancelBtn);
+        const tdDel=document.createElement('td'); 
+        tdDel.appendChild(delBtn);
+        tr.appendChild(tdStatus); tr.appendChild(tdCancel); tr.appendChild(tdDel);
+
+        // Row color based on status
+        if(o.status.includes("Cancelled")) tr.className="status-Cancelled";
+        else if(o.status==="Delivered") tr.className="status-Delivered";
+        else if(o.status==="Processing") tr.className="status-Processing";
+        else if(o.status==="Packed") tr.className="status-Packed";
+        else if(o.status==="Shipped") tr.className="status-Shipped";
+
+        tbody.appendChild(tr);
+    });
+}
+</script>
+
+</body>
+</html>
